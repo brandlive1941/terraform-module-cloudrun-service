@@ -28,7 +28,7 @@ resource "google_cloud_run_v2_service" "default" {
 
   provider = google-beta
 
-  name     = "${var.name_prefix}-${each.key}-cr"
+  name     = "${var.name_prefix}-cr"
   location = each.key
   ingress  = "INGRESS_TRAFFIC_ALL"
 
