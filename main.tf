@@ -1,5 +1,5 @@
 locals {
-  service_name = "${var.name_prefix}-${var.region}-cr"
+  service_name    = "${var.name_prefix}-${var.region}-cr"
   service_account = var.service_account == "" ? "${var.name_prefix}-cr-sa" : var.service_account
 }
 
@@ -14,14 +14,14 @@ module "service_account" {
 
 data "google_secret_manager_secret_version" "secrets" {
   for_each = var.env_vars
-  secret = each.value["source"]
+  secret   = each.value["source"]
 }
 
 resource "google_secret_manager_secret_iam_member" "member" {
-  for_each = var.env_vars
+  for_each  = var.env_vars
   secret_id = data.google_secret_manager_secret_version.secrets[each.key].secret_id
-  role = "roles/secretmanager.secretAccessor"
-  member = local.service_account
+  role      = "roles/secretmanager.secretAccessor"
+  member    = local.service_account
 }
 
 resource "google_cloud_run_v2_service" "default" {
