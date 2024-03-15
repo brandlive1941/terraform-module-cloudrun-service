@@ -22,7 +22,7 @@ module "service-name-cloudrun" {
   source = "github.com/brandlive1941/terraform-gcp/modules/terraform-modules-cloudrun@?ref=v1.0.1"
 
   project_id          = var.project_id
-  region              = var.region
+  regions             = var.regions
   name_prefix         = local.name_prefix
   image               = local.image
   env_vars            = var.env_vars

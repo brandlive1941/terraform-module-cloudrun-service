@@ -3,9 +3,15 @@ variable "project_id" {
   type        = string
 }
 
-variable "region" {
-  description = "region"
+variable "regions" {
+  description = "regions to deploy the cloud run service to"
+  type        = list(string)
+}
+
+variable "registry_location" {
+  description = "image location"
   type        = string
+  default     = "us"
 }
 
 variable "name_prefix" {
