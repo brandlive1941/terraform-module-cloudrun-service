@@ -1,5 +1,4 @@
 locals {
-  service_name    = "${var.name_prefix}-${var.region}-cr"
   service_account = var.service_account == "" ? "${var.name_prefix}-cr-sa" : var.service_account
 }
 
@@ -25,15 +24,17 @@ resource "google_secret_manager_secret_iam_member" "member" {
 }
 
 resource "google_cloud_run_v2_service" "default" {
+  for_each = toset(var.regions)
+
   provider = google-beta
 
-  name     = local.service_name
-  location = var.region
+  name     = "${var.name_prefix}-${each.key}-cr"
+  location = each.key
   ingress  = "INGRESS_TRAFFIC_ALL"
 
   template {
     containers {
-      image = "${var.region}-docker.pkg.dev/${var.project_id}/${var.image}"
+      image = "${var.registry_location}-docker.pkg.dev/${var.project_id}/${var.image}"
       dynamic "env" {
         for_each = var.env_vars
         content {
