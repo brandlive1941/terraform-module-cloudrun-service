@@ -26,7 +26,7 @@ variable "image" {
 
 variable "service_account" {
   description = "OPTIONAL: service account to run the container as"
-  type        = optional(string)
+  type        = string
 }
 
 variable "env_vars" {
