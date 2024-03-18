@@ -1,5 +1,13 @@
 locals {
-  service_account = var.service_account == "" ? "${var.name_prefix}-cr-sa" : var.service_account
+  service_account_name = var.service_account == "" ? "${var.name_prefix}-cr-sa" : var.service_account
+  service_account      = module.service_account[0].email == null ? data.google_service_account.service_account[0].email : module.service_account[0].email
+  services = {
+    for region in var.regions : region => {
+      name     = "${var.name_prefix}-cr-${region}"
+      location = region
+      env      = var.env_vars
+    }
+  }
 }
 
 module "service_account" {
@@ -8,41 +16,47 @@ module "service_account" {
   source     = "terraform-google-modules/service-accounts/google"
   version    = "~> 4.2.2"
   project_id = var.project_id
-  names      = [local.service_account]
+  names      = [local.service_account_name]
 }
 
-data "google_secret_manager_secret_version" "secrets" {
-  for_each = var.env_vars
-  secret   = each.value["source"]
+data "google_service_account" "service_account" {
+  count = var.service_account == "" ? 0 : 1
+
+  account_id = var.service_account
+}
+
+data "google_secret_manager_secret" "secrets" {
+  for_each  = var.env_vars
+  secret_id = each.value["source"]
 }
 
 resource "google_secret_manager_secret_iam_member" "member" {
   for_each  = var.env_vars
-  secret_id = data.google_secret_manager_secret_version.secrets[each.key].secret_id
+  secret_id = data.google_secret_manager_secret.secrets[each.key].id
   role      = "roles/secretmanager.secretAccessor"
   member    = local.service_account
 }
 
 resource "google_cloud_run_v2_service" "default" {
-  for_each = toset(var.regions)
+  for_each = local.services
 
   provider = google-beta
 
-  name     = "${var.name_prefix}-cr"
-  location = each.key
+  name     = each.value["name"]
+  location = each.value["location"]
   ingress  = "INGRESS_TRAFFIC_ALL"
 
   template {
     containers {
       image = "${var.registry_location}-docker.pkg.dev/${var.project_id}/${var.image}"
       dynamic "env" {
-        for_each = var.env_vars
+        for_each = each.value["env"]
         content {
           name = env.key
           value_source {
             secret_key_ref {
-              secret  = each.value["source"]
-              version = each.value["version"]
+              secret  = env.value["source"]
+              version = env.value["version"]
             }
           }
         }
@@ -64,7 +78,7 @@ resource "google_cloud_run_v2_service" "default" {
         }
       }
     }
-    service_account = module.service_account.email
+    service_account = module.service_account[0].email
   }
 }
 
