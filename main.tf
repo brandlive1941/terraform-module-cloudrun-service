@@ -3,9 +3,10 @@ locals {
   service_account      = module.service_account[0].email == null ? data.google_service_account.service_account[0].email : module.service_account[0].email
   services = {
     for region in var.regions : region => {
-      name     = "${var.name_prefix}-cr-${region}"
-      location = region
-      env      = var.env_vars
+      name           = "${var.name_prefix}-cr"
+      location       = region
+      container_port = var.container_port
+      env            = var.env_vars
     }
   }
 }
@@ -34,12 +35,17 @@ resource "google_secret_manager_secret_iam_member" "member" {
   for_each  = var.env_vars
   secret_id = data.google_secret_manager_secret.secrets[each.key].id
   role      = "roles/secretmanager.secretAccessor"
-  member    = local.service_account
+  member    = "serviceAccount:${local.service_account}"
+}
+
+resource "random_uuid" "cloudrun_revision_id" {
+  keepers = {
+    first = timestamp()
+  }
 }
 
 resource "google_cloud_run_v2_service" "default" {
   for_each = local.services
-
   provider = google-beta
 
   name     = each.value["name"]
@@ -47,8 +53,12 @@ resource "google_cloud_run_v2_service" "default" {
   ingress  = "INGRESS_TRAFFIC_ALL"
 
   template {
+    revision = "${each.value["name"]}-${random_uuid.cloudrun_revision_id.result}"
     containers {
       image = "${var.registry_location}-docker.pkg.dev/${var.project_id}/${var.image}"
+      ports {
+        container_port = each.value["container_port"]
+      }
       dynamic "env" {
         for_each = each.value["env"]
         content {
@@ -78,7 +88,17 @@ resource "google_cloud_run_v2_service" "default" {
         }
       }
     }
-    service_account = module.service_account[0].email
+    service_account = local.service_account
+  }
+  lifecycle {
+    ignore_changes = [
+      annotations,
+      client_version,
+      client,
+      labels,
+      template[0].annotations,
+      template[0].labels,
+    ]
   }
 }
 

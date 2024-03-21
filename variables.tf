@@ -24,6 +24,12 @@ variable "image" {
   type        = string
 }
 
+variable "container_port" {
+  description = "container port"
+  type        = number
+  default     = 8080
+}
+
 variable "service_account" {
   description = "OPTIONAL: service account to run the container as"
   type        = string
