@@ -1,11 +1,15 @@
+# It is preferable to create the cloud run service outside of terraform,
+# but we still want to control the prequisites for the service via IaC
+
 variable "project_id" {
   description = "project id"
   type        = string
 }
 
 variable "regions" {
-  description = "regions to deploy the cloud run service to"
+  description = "regions to deploy the cloud run service, if not regions are provided cloud run creation will be skipped"
   type        = list(string)
+  default     = []
 }
 
 variable "registry_location" {
@@ -19,9 +23,25 @@ variable "name_prefix" {
   type        = string
 }
 
+variable "github_org" {
+  description = "github organization"
+  type        = string
+}
+
+variable "repository" {
+  description = "github repository"
+  type        = string
+}
+
+variable "artifact_repo_name" {
+  description = "artifact registry repository name"
+  type        = string
+}
+
 variable "image" {
   description = "docker image name"
   type        = string
+  default     = ""
 }
 
 variable "container_port" {

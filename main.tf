@@ -11,6 +11,13 @@ locals {
   }
 }
 
+resource "google_artifact_registry_repository" "repo" {
+  location      = var.registry_location
+  repository_id = var.artifact_repo_name
+  description   = "${var.artifact_repo_name} ${var.github_org}/${var.repository}"
+  format        = "DOCKER"
+}
+
 module "service_account" {
   count = var.service_account == "" ? 1 : 0
 
@@ -24,18 +31,6 @@ data "google_service_account" "service_account" {
   count = var.service_account == "" ? 0 : 1
 
   account_id = var.service_account
-}
-
-data "google_secret_manager_secret" "secrets" {
-  for_each  = var.env_vars
-  secret_id = each.value["source"]
-}
-
-resource "google_secret_manager_secret_iam_member" "member" {
-  for_each  = var.env_vars
-  secret_id = data.google_secret_manager_secret.secrets[each.key].id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${local.service_account}"
 }
 
 resource "random_uuid" "cloudrun_revision_id" {
