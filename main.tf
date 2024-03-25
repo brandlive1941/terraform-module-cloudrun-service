@@ -33,12 +33,6 @@ data "google_service_account" "service_account" {
   account_id = var.service_account
 }
 
-resource "random_uuid" "cloudrun_revision_id" {
-  keepers = {
-    first = timestamp()
-  }
-}
-
 resource "google_cloud_run_v2_service" "default" {
   for_each = local.services
   provider = google-beta
