@@ -42,7 +42,6 @@ resource "google_cloud_run_v2_service" "default" {
   ingress  = "INGRESS_TRAFFIC_ALL"
 
   template {
-    revision = "${each.value["name"]}-${random_uuid.cloudrun_revision_id.result}"
     containers {
       image = "${var.registry_location}-docker.pkg.dev/${var.project_id}/${var.image}"
       ports {
